@@ -34,12 +34,12 @@ try {
   await fill('2000');await page.locator('#'+field).fill('');
   assert.equal(await page.locator('#'+field).getAttribute('required'),'');
   await page.getByRole('button',{name:/Confirmer la commande fictive/}).click();
-  await page.locator('#'+(field==='postal'?'postal-error':field+'-error')).waitFor();
+  await page.locator('#checkout-error').waitFor();assert.equal(await page.locator('input[aria-invalid=true]').count(),0);
  }
  assert.equal(await page.locator('#phone').getAttribute('required'),null);
  await fill('20');
  await page.getByRole('button',{name:/Confirmer la commande fictive/}).click();
- assert.equal(await page.locator('#name').inputValue(),'');assert.equal(await page.locator('#postal-error').count(),1);
+ assert.equal(await page.locator('#name').inputValue(),'');assert.equal(await page.locator('#checkout-error').count(),1);assert.equal(await page.locator('#postal-error').count(),0);
  await fill('2000');await page.getByRole('button',{name:/Confirmer la commande fictive/}).click();await page.waitForURL(/confirmation/);
  await page.getByRole('button',{name:'Annuler cette commande'}).click();
  assert.match(await page.locator('#modal-title').innerText(),/ne pas vouloir/);
