@@ -28,7 +28,16 @@ try {
  await page.waitForURL(/panier/);
  await page.locator('.recommend').waitFor();
  styles.push(await page.locator('[data-role="ajout-panier"]').evaluate(e=>[getComputedStyle(e).borderRadius,getComputedStyle(e).padding,getComputedStyle(e).backgroundColor]));
- await page.getByRole('link',{name:'Passer la commande'}).click();await fill('20');
+ await page.getByRole('link',{name:'Passer la commande'}).click();
+ await page.locator('#name').waitFor();
+ for(const field of ['name','email','address','postal','city']){
+  await fill('2000');await page.locator('#'+field).fill('');
+  assert.equal(await page.locator('#'+field).getAttribute('required'),'');
+  await page.getByRole('button',{name:/Confirmer la commande fictive/}).click();
+  await page.locator('#'+(field==='postal'?'postal-error':field+'-error')).waitFor();
+ }
+ assert.equal(await page.locator('#phone').getAttribute('required'),null);
+ await fill('20');
  await page.getByRole('button',{name:/Confirmer la commande fictive/}).click();
  assert.equal(await page.locator('#name').inputValue(),'');assert.equal(await page.locator('#postal-error').count(),1);
  await fill('2000');await page.getByRole('button',{name:/Confirmer la commande fictive/}).click();await page.waitForURL(/confirmation/);
@@ -45,10 +54,10 @@ try {
  assert.equal(new Set(styles.map(s=>JSON.stringify(s))).size,3);
  await page.waitForFunction(()=>document.querySelector('[data-d="7"]')?.complete);
  const image=await page.evaluate(async()=>{const r=await fetch(document.querySelector('[data-d="7"]').src);return (await r.blob()).size;});assert.ok(image>10_000_000);
- const scan=await new AxeBuilder({page}).analyze();const rules=scan.violations.map(v=>v.id);assert.ok(rules.includes('button-name'));assert.ok(rules.includes('color-contrast'));
+ const scan=await new AxeBuilder({page}).analyze();const rules=scan.violations.map(v=>v.id);assert.ok(rules.includes('button-name'));assert.ok(rules.includes('color-contrast'));assert.ok(rules.includes('image-alt'));
  await mkdir('.preuves',{recursive:true});await page.screenshot({path:'.preuves/produit.png',fullPage:true});
- await page.goto(base+'/compte/');await page.locator('#login-email').fill('Camille@example.test');await page.locator('#login-password').fill('Escale2026!');await page.getByRole('button',{name:/Se connecter/}).click();await page.waitForURL(/commande/);
- await page.waitForFunction(()=>document.querySelector('#name')?.value==='Camille');
+ await page.goto(base+'/compte/');await page.waitForURL(/commande/);
+ assert.equal(await page.locator('a[href*="compte"]').count(),0);
  await page.setViewportSize({width:390,height:844});await page.goto(base+'/');await ready();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:'.preuves/mobile.png',fullPage:false});
- assert.deepEqual(errors,[]);console.log('OK : 9 défauts présents, aucun contrôle de correction, panier/commande/connexion/mobile fonctionnels.');
+ assert.deepEqual(errors,[]);console.log('OK : 9 défauts présents, aucun contrôle de correction, panier/commande/mobile fonctionnels.');
 }finally{await browser.close();if(server) await new Promise(r=>server.close(r));}
